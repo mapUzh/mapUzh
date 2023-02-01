@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+          integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
+          crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+            integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM="
+            crossorigin=""></script>
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+</head>
+<body>
+<div id="map" style="height: 97vh"></div>
+<script>
+
+
+    const map = L.map('map').setView([48.613867, 22.265819], 13);
+
+    const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+
+    }).addTo(map);
+
+    function getCurrentTime(){
+        let date = new Date()
+        let hour = date.getHours();
+        let minutes = date.getMinutes();
+        let seconds = date.getSeconds();
+        let time = hour + ':' + minutes + ':' + seconds;
+        let secLeft = Math.round(date.getTime() / 1000)
+        return secLeft;
+
+
+
+    }
+    function howPastTime(time){
+       let res =  getCurrentTime() - time;
+        let minutesLeft = res / 60;
+        if (minutesLeft > 1){
+            return  `${Math.round(minutesLeft)} хв. тому`
+        }
+        else {
+            return `${res} сек. тому`
+        }
+
+    }
+    fetch('/getAllCords')
+        .then(res => res.json())
+        .then((res) => {
+
+            const markers = res;
+            markers.forEach(marker => {
+               someFunction(marker.coord, marker.timer, marker.timeInMoment)
+            })
+
+        });
+
+
+
+
+    map.on('click', (e)=> {
+        let time = getCurrentTime();
+
+
+        // let coord = e.latlng.toString().split(',');
+        // let lat = coord[0].split('(');
+        // let lng = coord[1].split(')');
+         let coord = JSON.stringify(e.latlng)
+         let timeInMoment = Math.round(new Date().getTime() / 1000)
+
+
+
+
+
+
+        console.log(coord)
+
+        $.post("/request", {
+            coords: coord,
+            countTime: 1800,
+            timeInMoment: timeInMoment,
+        })
+
+       fetch('/getCurrentCord')
+           .then(res => res.json())
+           .then((res) => {
+             someFunction(res.coord, res.timer, res.timeInMoment)
+               console.log(res.timer)
+           });
+
+
+
+
+    });
+
+
+    function someFunction(coord, time, timePast) {
+
+        let marker = L.marker(JSON.parse(coord), {}).addTo(map);
+
+       setInterval(()=>{
+           marker.bindTooltip(`${howPastTime(timePast)}`,
+               {
+                   permanent: true,
+                   direction: 'top'
+               }
+           )
+       },0)
+
+        setTimeout(() => {
+            map.removeLayer(marker)
+        }, `${time}000`)
+    }
+
+
+
+
+
+
+
+
+
+
+
+</script>
+
+</body>
+</html>
